@@ -5,23 +5,58 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
-    
-class Widget(QWidget):
+
+class Application(QMainWindow):
+    known_face_encodings=[]
+    known_face_names=[]
+    unknown_face_encodings=[] ########비허가자 추가 & 윈도우 잠금 ctypes.windll.user32.LockWorkStation()
+    unknown_face_names=[] ######## 개발자 info추가
     def __init__(self):
         super().__init__()
-        
-        myFace=face_recognition.load_image_file("my.jpg")
-        myFace_face_encoding=face_recognition.face_encodings(myFace)[0]
-        
-        self.known_face_encodings=[myFace_face_encoding]
-        self.known_face_names=["mj"]
+        self.title="you얼굴 recognition한다"
+        self.setWindowTitle(self.title)
+        self.setGeometry(150,150,650,550)
 
+        IUFace=face_recognition.load_image_file("iu.jpg")
+        IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
+        self.known_face_encodings=[IUFace_face_encoding]
+        self.known_face_names=["IU"]
+
+        menu=self.menuBar()
+        menu_file=menu.addMenu("file")
+
+        file_new=QAction("사용자 추가",self)
+        file_new.triggered.connect(Widget.showDialog)
+        
+        menu_file.addAction(file_new)
+
+        self.main_widget=Widget(self)
+        self.setCentralWidget(self.main_widget)
+        self.show()
+
+
+class Widget(QWidget):
+
+    def __init__(self,parent):
+        super(QWidget,self).__init__(parent)
+        
+        ##아이유얼굴 기본으로 추가한것
+        IUFace=face_recognition.load_image_file("iu.jpg")
+        IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
+        
+        Application.known_face_encodings=[IUFace_face_encoding]
+        Application.known_face_names=["IU"]
+        
+
+        self.i=0
+        self.readname=""
         self.face_locations=[]
         self.face_encodings=[]
         self.face_names=[]
         self.name=''
         self.process_this_frame=True
         self.initUI()
+
     
     
     def initUI(self):
@@ -32,7 +67,7 @@ class Widget(QWidget):
         # self.img_O= cv2.cvtColor(self.img_O, cv2.COLOR_RGB2GRAY)
         # cv2.imwrite('img_O.jpg',self.img_O) 
         # my.jpg읽어오는걸로 바꾸면 됌
-        
+
         self.frame=QLabel(self) # 얼굴 표출 화면
         self.frame.resize(640,480)
         self.frame.setScaledContents(True)
@@ -72,6 +107,28 @@ class Widget(QWidget):
         self.setWindowTitle("Cam_exam")
         self.show()
 
+    def showDialog(self):
+        qid=QInputDialog()
+        qa=QAction()
+        qmb=QMessageBox()
+        user,ok = QInputDialog.getText(qid,'사용자 추가','이름을 적어주세요:')
+        if user=='':
+            QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
+        elif ok:
+            print('user: ok',user,ok)
+            qfd=QFileDialog()
+            fileName, _ = QFileDialog.getOpenFileName(qfd,"불러올 이미지를 선택하세요", "", "Images (*png, *.jpg)")  
+            if fileName:
+                print(fileName)
+                
+                ReadFace=face_recognition.load_image_file(fileName)
+                ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
+                print(ReadFace_encoding)
+                Application.known_face_names.append(user)
+                Application.known_face_encodings.append(ReadFace_encoding)
+                print(Application.known_face_names)
+                
+
     def setFps(self):
         self.fps=self.sldr.value() 
         self.prt.setText("FPS "+str(self.fps)+"로 조정!")
@@ -88,6 +145,7 @@ class Widget(QWidget):
         self.timer.start(1000 /self.fps) #24분의 1초마다 반복
 
     def nextFrameSlot(self):
+        self.i+= 1
         _, frame=self.cpt.read()
         small_frame=cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
         rgb_small_frame=small_frame[ :, :,::-1]
@@ -96,22 +154,25 @@ class Widget(QWidget):
         if self.process_this_frame:
             self.face_locations=face_recognition.face_locations(rgb_small_frame)
             self.face_encodings=face_recognition.face_encodings(rgb_small_frame, self.face_locations)
-            #self.face_names=[]
+            self.face_names=[]
             for face_encoding in self.face_encodings:
-                matches=face_recognition.compare_faces(self.known_face_encodings , face_encoding)
+                self.i=0
+                matches=face_recognition.compare_faces(Application.known_face_encodings , face_encoding)
                 self.name="Unknown"
 
-                face_distances=face_recognition.face_distance(self.known_face_encodings , face_encoding)
+                face_distances=face_recognition.face_distance(Application.known_face_encodings , face_encoding)
                 best_match_index=np.argmin(face_distances)
+                print(best_match_index)
                 if matches[best_match_index]:
-                    self.name=self.known_face_names[best_match_index]
+                    self.name=Application.known_face_names[best_match_index]
                 self.face_names.append(self.name)
-                print(self.name)
+                #print(self.name)
         self.prt.setText('사용자 : '+self.name)
         self.process_this_frame = not self.process_this_frame
         img=QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         pix=QPixmap.fromImage(img)
         self.frame.setPixmap(pix)
+        print(self.i)
 
     def stop(self):
         self.frame.setPixmap(QPixmap.fromImage(QImage()))#영상을 비우고 
@@ -121,5 +182,5 @@ class Widget(QWidget):
     
 if __name__ == '__main__':
     app=QApplication(sys.argv)
-    wd=Widget()
+    apl=Application()
     sys.exit(app.exec_())

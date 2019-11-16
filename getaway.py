@@ -87,6 +87,7 @@ if __name__ == '__main__':
 
     image_viewer1= ImageViewer()
 
+
     vid.VideoSignal1.connect(image_viewer1.setImage)
     
     push_button1=QPushButton('start')
