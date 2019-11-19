@@ -17,18 +17,21 @@ class Application(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(150,150,650,550)
 
-        IUFace=face_recognition.load_image_file("iu.jpg")
+        IUFace=face_recognition.load_image_file("sana.jpg")
         IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
-        self.known_face_encodings=[IUFace_face_encoding]
-        self.known_face_names=["IU"]
+        known_face_encodings=[IUFace_face_encoding]
+        known_face_names=["SANA"]
 
         menu=self.menuBar()
         menu_file=menu.addMenu("file")
 
         file_new=QAction("사용자 추가",self)
         file_new.triggered.connect(Widget.showDialog)
-        
+        file_ban=QAction("비허가 사용자 추가",self)
+        file_ban.triggered.connect(Widget.banDialog)
+
         menu_file.addAction(file_new)
+        menu_file.addAction(file_ban)
 
         self.main_widget=Widget(self)
         self.setCentralWidget(self.main_widget)
@@ -40,12 +43,19 @@ class Widget(QWidget):
     def __init__(self,parent):
         super(QWidget,self).__init__(parent)
         
-        ##아이유얼굴 기본으로 추가한것
-        IUFace=face_recognition.load_image_file("iu.jpg")
-        IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
+
+        #내얼굴 허가자로 추가 한것
+        myFace=face_recognition.load_image_file('my.jpg')
+        myFace_encoding=face_recognition.face_encodings(myFace)
+
+        Application.known_face_encodings=[myFace_encoding]
+        Application.known_face_names=["MJ"]
+        # ##사나얼굴 밴으로 추가한것
+        # SanaFace=face_recognition.load_image_file("sana.jpg")
+        # SanaFace_face_encoding=face_recognition.face_encodings(SanaFace)[0]
         
-        Application.known_face_encodings=[IUFace_face_encoding]
-        Application.known_face_names=["IU"]
+        # Application.unknown_face_encodings=[SanaFace_face_encoding]
+        # Application.unknown_face_names=["IU"]
         
 
         self.i=0
@@ -115,7 +125,7 @@ class Widget(QWidget):
         if user=='':
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
-            print('user: ok',user,ok)
+            print('newUser: ok',user,ok)
             qfd=QFileDialog()
             fileName, _ = QFileDialog.getOpenFileName(qfd,"불러올 이미지를 선택하세요", "", "Images (*png, *.jpg)")  
             if fileName:
@@ -128,6 +138,27 @@ class Widget(QWidget):
                 Application.known_face_encodings.append(ReadFace_encoding)
                 print(Application.known_face_names)
                 
+    def banDialog(self):
+        qid=QInputDialog()
+        qa=QAction()
+        qmb=QMessageBox()
+        user,ok = QInputDialog.getText(qid,'사용자 추가','이름을 적어주세요:')
+        if user=='':
+            QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
+        elif ok:
+            print('banUser: ok',user,ok)
+            qfd=QFileDialog()
+            fileName, _ = QFileDialog.getOpenFileName(qfd,"불러올 이미지를 선택하세요", "", "Images (*png, *.jpg)")  
+            if fileName:
+                print(fileName)
+                
+                ReadFace=face_recognition.load_image_file(fileName)
+                ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
+                print(ReadFace_encoding)        
+                Application.unknown_face_names.append(user)
+                Application.unknown_face_encodings.append(ReadFace_encoding)
+                print(Application.unknown_face_names)
+        
 
     def setFps(self):
         self.fps=self.sldr.value() 
@@ -154,25 +185,71 @@ class Widget(QWidget):
         if self.process_this_frame:
             self.face_locations=face_recognition.face_locations(rgb_small_frame)
             self.face_encodings=face_recognition.face_encodings(rgb_small_frame, self.face_locations)
-            self.face_names=[]
+            self.face_names=[]  #필요없느거 아닌가??
             for face_encoding in self.face_encodings:
-                self.i=0
-                matches=face_recognition.compare_faces(Application.known_face_encodings , face_encoding)
+                
+                matches=face_recognition.compare_faces(Application.known_face_encodings,face_encoding)
                 self.name="Unknown"
-
+                self.i=0
                 face_distances=face_recognition.face_distance(Application.known_face_encodings , face_encoding)
                 best_match_index=np.argmin(face_distances)
+                print(face_distances)
                 print(best_match_index)
+                self.name=Application.known_face_names[best_match_index]
+                self.face_names.append(self.name) #필요없는거 아닌가?
                 if matches[best_match_index]:
                     self.name=Application.known_face_names[best_match_index]
-                self.face_names.append(self.name)
-                #print(self.name)
+                print(self.name)
+
+
+
+
+                # matches=face_recognition.compare_faces(Application.known_face_encodings , face_encoding)
+                # unmatches=face_recognition.compare_faces(Application.unknown_face_encodings,face_encoding)
+                # print(matches)
+                # print(unmatches)
+                # if len(matches)==0:
+                #     self.name='사용자를 추가하세요 '
+                # elif matches[0]==True:
+                #     face_distances=face_recognition.face_distance(Application.known_face_encodings , face_encoding)
+                #     best_match_index=np.argmin(face_distances)
+                #     print(face_distances)
+                #     print(best_match_index)
+                #     self.name=Application.known_face_names[best_match_index]  
+                # elif matches[0]==False:
+                #     if len(unmatches)!=0:
+                #         self.name="Unkown"
+                #         ban_face_distances=face_recognition.face_distance(Application.unknown_face_encodings,face_encoding)
+                #         ban_best_match_index=np.argmin(ban_face_distances)
+                #         print(ban_face_distances)
+                #         print(ban_best_match_index)
+                #         if unmatches[ban_best_match_index]:
+                #             self.name=Application.unknown_face_names[ban_best_match_index]   
+                
+                # self.name="Unknown"
+                # print(matches)
+                # print(len(matches))
+                # if matches[0]==True:
+                #     face_distances=face_recognition.face_distance(Application.known_face_encodings , face_encoding)
+                #     best_match_index=np.argmin(face_distances)
+                #     print(face_distances)
+                #     print(best_match_index)
+                #     self.name=Application.known_face_names[best_match_index]
+                # elif matches[0]==False:
+                #     ban_face_distances=face_recognition.face_distance(Application.unknown_face_encodings,face_encoding)
+                #     ban_best_match_index=np.argmin(ban_face_distances)
+                #     self.name=Application.unknown_face_names[ban_best_match_index]
+                #     #print(matches)  #등록된 얼굴 맞는지 true , false값 반환
+                #     # if matches[0]==True:
+                # else:
+                #     self.name="Unkown"
+                ############################################################################################################
         self.prt.setText('사용자 : '+self.name)
         self.process_this_frame = not self.process_this_frame
         img=QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         pix=QPixmap.fromImage(img)
         self.frame.setPixmap(pix)
-        print(self.i)
+        #print(self.i)
 
     def stop(self):
         self.frame.setPixmap(QPixmap.fromImage(QImage()))#영상을 비우고 
