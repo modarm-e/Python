@@ -10,7 +10,7 @@ from PyQt5.QtCore import *
 class Application(QMainWindow):
     known_face_encodings=[]
     known_face_names=[]
-    unknown_face_encodings=[] ########비허가자 추가 & 윈도우 잠금 ctypes.windll.user32.LockWorkStation()
+    unknown_face_encodings=[] 
     unknown_face_names=[] ######## 개발자 info추가
     def __init__(self):
         super().__init__()
@@ -45,11 +45,11 @@ class Widget(QWidget):
         super(QWidget,self).__init__(parent)
         
         ##아이유얼굴 기본으로 추가한것
-        IUFace=face_recognition.load_image_file("sana.jpg")
-        IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
+        # IUFace=face_recognition.load_image_file("img/chang.jpg")
+        # IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
         
-        Application.known_face_encodings=[IUFace_face_encoding]
-        Application.known_face_names=["강동원"]
+        # Application.known_face_encodings=[IUFace_face_encoding]
+        # Application.known_face_names=["강동원"]
         
 
         self.i=0
@@ -186,7 +186,7 @@ class Widget(QWidget):
                 
                 if len(Application.known_face_names)==0:
                     self.name="사용자를 추가해주세요."
-
+                    break
                 #허가자
                 elif Application.known_face_names:
 
@@ -210,8 +210,8 @@ class Widget(QWidget):
                         face_distances=face_recognition.face_distance(Application.unknown_face_encodings,face_encoding)
                         best_match_index=np.argmin(face_distances)
                         print('=========비허가자',Application.unknown_face_names[best_match_index])
-                        count()
-                        if macthes[best_match_index]:
+                        
+                        if matches[best_match_index]:
                             self.name=Application.unknown_face_names[best_match_index]
                             self.unPermission()
                         else:
@@ -237,6 +237,7 @@ class Widget(QWidget):
             self.yellowcard+=1
             print("yellow:",self.yellowcard)
         if self.yellowcard%5==0:
+            self.stop()
             ctypes.windll.user32.LockWorkStation()
 
     def unPermission(self):
@@ -246,7 +247,9 @@ class Widget(QWidget):
             self.redcard+=1
             print("red:",self.redcard)
         if self.redcard%3==0:
+            self.stop()
             ctypes.windll.user32.LockWorkStation()
+            
 
     def stop(self):
         self.frame.setPixmap(QPixmap.fromImage(QImage()))#영상을 비우고 
