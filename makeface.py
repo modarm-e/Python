@@ -18,11 +18,6 @@ class Application(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(150,150,650,550)
 
-        # IUFace=face_recognition.load_image_file("iu.jpg")
-        # IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
-        # self.known_face_encodings=[IUFace_face_encoding]
-        # self.known_face_names=["IU"]
-
         menu=self.menuBar()
         menu_file=menu.addMenu("file")
 
@@ -53,8 +48,10 @@ class Widget(QWidget):
         
 
         self.i=0
+        self.j=0
         self.yellowcard=1
         self.redcard=1
+        self.noone=0
         self.readname=""
         self.face_locations=[]
         self.face_encodings=[]
@@ -69,10 +66,6 @@ class Widget(QWidget):
         self.cpt=cv2.VideoCapture(0)
         self.fps=60
         self.sens=300
-        # _, self.img_O = self.cpt.read()
-        # self.img_O= cv2.cvtColor(self.img_O, cv2.COLOR_RGB2GRAY)
-        # cv2.imwrite('img_O.jpg',self.img_O) 
-        # my.jpg읽어오는걸로 바꾸면 됌
 
         self.frame=QLabel(self) # 얼굴 표출 화면
         self.frame.resize(640,480)
@@ -176,20 +169,20 @@ class Widget(QWidget):
         rgb_small_frame=small_frame[ :, :,::-1]
         frame=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    
-        if self.process_this_frame:
+
+        if len(Application.known_face_names)==0:
+            self.name="사용자를 추가해주세요."
+        else:
+
+        # if self.process_this_frame:
             self.face_locations=face_recognition.face_locations(rgb_small_frame)
             self.face_encodings=face_recognition.face_encodings(rgb_small_frame, self.face_locations)
-            self.face_names=[]
-            for face_encoding in self.face_encodings:
-                
-                
-                if len(Application.known_face_names)==0:
-                    self.name="사용자를 추가해주세요."
-                    break
-                #허가자
-                elif Application.known_face_names:
-
+            
+            if len(self.face_locations)==0:
+                self.noperson()
+            else:
+                for face_encoding in self.face_encodings:
+                    
                     #사용자 얼굴 인식
                     matches=face_recognition.compare_faces(Application.known_face_encodings , face_encoding)
                     # self.name="Unknown"
@@ -221,6 +214,8 @@ class Widget(QWidget):
                         self.name="Unknown"
                         self.unknowncount()
                     self.face_names.append(self.name)
+
+
                     
 
         self.prt.setText('사용자 : '+self.name)
@@ -228,16 +223,24 @@ class Widget(QWidget):
         img=QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         pix=QPixmap.fromImage(img)
         self.frame.setPixmap(pix)
-        
+    
+    def noperson(self):
+        self.noone+=1
+        if self.noone>500:
+            self.stop()
+            ctypes.windll.user32.LockWorkStation()
+
 
     def unknowncount(self):
         self.i+=1
         print("i:",self.i)
         if self.i>4:
             self.yellowcard+=1
+            self.i=0
             print("yellow:",self.yellowcard)
         if self.yellowcard%5==0:
             self.stop()
+            self.yellowcard=1
             ctypes.windll.user32.LockWorkStation()
 
     def unPermission(self):
@@ -245,9 +248,11 @@ class Widget(QWidget):
         print("j:",self.j)
         if self.j>4:
             self.redcard+=1
+            self.j=0
             print("red:",self.redcard)
         if self.redcard%3==0:
             self.stop()
+            self.redcard=1
             ctypes.windll.user32.LockWorkStation()
             
 
