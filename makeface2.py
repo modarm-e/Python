@@ -42,7 +42,7 @@ def save_name():
 class Application(QMainWindow):
     known_face_encodings=[]
     known_face_names=[]
-    unknown_face_encodings=[] 
+    unknown_face_encodings=[]
     unknown_face_names=[] ######## 개발자 info추가
 
     def __init__(self):
@@ -65,12 +65,10 @@ class Application(QMainWindow):
         file_ban_del=QAction("비허가자 삭제",self)
         file_ban_del.triggered.connect(Widget.delBanDialog)
 
+        file_create = QMenu('추가', self)
+        file_delete = QMenu('삭제', self)
+        menu_user = QMenu('허가자', self)
         
-        file_create=QMenu('추가',self)
-        file_delete=QMenu('삭제',self)
-        menu_user=QMenu('허가자',self)
-        
-
         menu_user.addAction(file_new)
         menu_user.addAction(file_cap)
         file_create.addMenu(menu_user)
@@ -84,7 +82,7 @@ class Application(QMainWindow):
         self.main_widget=Widget(self)
         self.setCentralWidget(self.main_widget)
         self.show()
-
+        
         try:
             read_name()
             # 저장되어 있는 'name.p'파일을 읽어들인다.
@@ -107,7 +105,14 @@ class Widget(QWidget):
 
     def __init__(self,parent):
         super(QWidget,self).__init__(parent)
-    
+        
+        ##아이유얼굴 기본으로 추가한것
+        # IUFace=face_recognition.load_image_file("img/chang.jpg")
+        # IUFace_face_encoding=face_recognition.face_encodings(IUFace)[0]
+        
+        # Application.known_face_encodings=[IUFace_face_encoding]
+        # Application.known_face_names=["강동원"]
+        
         self.i=0
         self.j=0
         self.yellowcard=1
@@ -122,7 +127,7 @@ class Widget(QWidget):
         self.initUI()
 
     
-    
+
     def initUI(self):
         self.cpt=cv2.VideoCapture(0)
         self.fps=60
@@ -171,7 +176,7 @@ class Widget(QWidget):
         qid=QInputDialog()
         qa=QAction()
         qmb=QMessageBox()
-        user,ok = QInputDialog.getText(qid,'사용자 추가','이름을 적어주세요:')
+        user,ok = QInputDialog.getText(qid,'허가자 추가', "이미 등록된 허가자 : " + ", ".join(Application.known_face_names) + '\n이름을 적어주세요:')
         if user=='':
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
@@ -187,8 +192,8 @@ class Widget(QWidget):
                 Application.known_face_encodings.append(ReadFace_encoding)
                 print_name()
                 save_name()
-                #배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
-
+                # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
+                
     def delShowDialog(self):
         qid=QInputDialog()
         qa=QAction()
@@ -204,18 +209,18 @@ class Widget(QWidget):
             print_name()
             save_name()
             # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
-                      
+
     def banDialog(self):
         qid=QInputDialog()
         qa=QAction()
         qmb=QMessageBox()
-        user,ok = QInputDialog.getText(qid,'사용자 추가','이름을 적어주세요:')
+        user,ok = QInputDialog.getText(qid,'비허가자 추가',"이미 등록된 비허가자 : " + ", ".join(Application.unknown_face_names) + '\n이름을 적어주세요:')
         if user=='':
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
             print('user: ok',user,ok)
             qfd=QFileDialog()
-            fileName, _ = QFileDialog.getOpenFileName(qfd,"불러올 이미지를 선택하세요", "", "Images (*png, *.jpg)")  
+            fileName, _ = QFileDialog.getOpenFileName(qfd,"불러올 이미지를 선택하세요", "", "Images (*png, *.jpg)")
             print('user: ok',user,ok)
             index = Application.unknown_face_names.index(user)
             Application.unknown_face_names.remove(user)
@@ -233,13 +238,20 @@ class Widget(QWidget):
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
             print('user: ok',user,ok)
+
+            # ReadFace=face_recognition.load_image_file(fileName)
+            # ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
+            # Application.unknown_face_names.append(user)
+            # Application.unknown_face_encodings.append(ReadFace_encoding)
+            # print_name()
+            # save_name()
+
             index = Application.unknown_face_names.index(user)
             Application.unknown_face_names.remove(user)
             del Application.unknown_face_encodings[index]
             print_name()
             save_name()
             # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
-
 
     def setFps(self):
         self.fps=self.sldr.value() 
