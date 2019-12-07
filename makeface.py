@@ -3,6 +3,7 @@ import numpy as np
 import face_recognition
 import ctypes
 import pickle
+# import face
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -57,7 +58,7 @@ class Application(QMainWindow):
         file_new=QAction("파일에서 찾기",self)
         file_new.triggered.connect(Widget.showDialog)
         file_cap=QAction("웹캠으로 추가",self)
-        # file_cap.triggered.connect(Widget.capDialog)
+        file_cap.triggered.connect(Widget.capDialog)
         file_ban=QAction("비허가자 추가",self)
         file_ban.triggered.connect(Widget.banDialog)
         file_new_del=QAction("사용자 삭제",self)
@@ -189,6 +190,26 @@ class Widget(QWidget):
                 save_name()
                 #배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
 
+    def capDialog(self):
+        qid=QInputDialog()
+        qa=QAction()
+        qmb=QMessageBox()
+        user,ok=QInputDialog.getText(qid,'사용자 추가', '이름을 적어주세요:')
+        if user=='':
+            QMessageBox.information(qmb,'오류','사용자명을 입력하지 않았습니다.')
+        elif ok:
+            print('user: ok',user,ok)
+            # capture=pycapture.Application()
+            # face.show()
+            # cpt=cv2.VideoCapture(0)
+            # _ , frame=cpt.read()
+            ReadFace=face_recognition.load_image_file(frame)
+            ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
+            Application.known_face_names.append(user)
+            Application.known_face_encodings.append(ReadFace_encoding)
+            print_name()
+            save_name()        
+
     def delShowDialog(self):
         qid=QInputDialog()
         qa=QAction()
@@ -209,19 +230,21 @@ class Widget(QWidget):
         qid=QInputDialog()
         qa=QAction()
         qmb=QMessageBox()
-        user,ok = QInputDialog.getText(qid,'사용자 추가','이름을 적어주세요:')
+        user,ok = QInputDialog.getText(qid,'비허가자 추가','이름을 적어주세요:')
         if user=='':
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
             print('user: ok',user,ok)
             qfd=QFileDialog()
             fileName, _ = QFileDialog.getOpenFileName(qfd,"불러올 이미지를 선택하세요", "", "Images (*png, *.jpg)")  
-            print('user: ok',user,ok)
-            index = Application.unknown_face_names.index(user)
-            Application.unknown_face_names.remove(user)
-            del Application.unknown_face_encodings[index]
-            print_name()
-            save_name()
+            if fileName:
+                print(fileName)
+                ReadFace=face_recognition.load_image_file(fileName)
+                ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
+                Application.unknown_face_names.append(user)
+                Application.unknown_face_encodings.append(ReadFace_encoding)
+                print_name()
+                save_name()
             # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
 
     def delBanDialog(self):
@@ -284,6 +307,14 @@ class Widget(QWidget):
                     best_match_index=np.argmin(face_distances)
                     
                     if matches[best_match_index]:
+                        for(top,right,bottom,left)in self.face_locations:
+                                top *=4
+                                right *=4
+                                bottom *=4
+                                left *=4
+                                cv2.rectangle(frame,(left,top),(right,bottom),(0,0,255),2)
+                                font=cv2.FONT_HERSHEY_DUPLEX
+                                cv2.putText(frame,"Licensed",(left+6,bottom-6), font, 1.0,(255,255,255),1)
                         self.name=Application.known_face_names[best_match_index]
                         self.i=0
                         self.j=0
@@ -296,18 +327,40 @@ class Widget(QWidget):
                         print('=========비허가자',Application.unknown_face_names[best_match_index])
                         
                         if matches[best_match_index]:
+                            for(top,right,bottom,left)in self.face_locations:
+                                top *=4
+                                right *=4
+                                bottom *=4
+                                left *=4
+                                cv2.rectangle(frame,(left,top),(right,bottom),(255,0,0),2)
+                                font=cv2.FONT_HERSHEY_DUPLEX
+                                cv2.putText(frame,"Unlicensed",(left+6,bottom-6), font, 1.0,(255,255,255),1)
+
                             self.name=Application.unknown_face_names[best_match_index]
                             self.unPermission()
                         else:
+                            for(top,right,bottom,left)in self.face_locations:
+                                top *=4
+                                right *=4
+                                bottom *=4
+                                left *=4
+                                cv2.rectangle(frame,(left,top),(right,bottom),(150,150,0),2)
+                                font=cv2.FONT_HERSHEY_DUPLEX
+                                cv2.putText(frame,"Who are you",(left+6,bottom-6), font, 1.0,(255,255,255),1)
                             self.name="Unknown"
                             self.unknowncount()
                     else:
+                        for(top,right,bottom,left)in self.face_locations:
+                                top *=4
+                                right *=4
+                                bottom *=4
+                                left *=4
+                                cv2.rectangle(frame,(left,top),(right,bottom),(150,150,0),2)
+                                font=cv2.FONT_HERSHEY_DUPLEX
+                                cv2.putText(frame,"Who are you",(left+6,bottom-6), font, 1.0,(255,255,255),1)
                         self.name="Unknown"
                         self.unknowncount()
                     self.face_names.append(self.name)
-
-
-                    
 
         self.prt.setText('사용자 : '+self.name)
         self.process_this_frame = not self.process_this_frame
