@@ -141,7 +141,11 @@ class Widget(QWidget):
         self.timer.stop()   #타임을 끔
 
     
-if __name__ == '__main__':
-    app=QApplication(sys.argv)
-    wd=Widget()
-    sys.exit(app.exec_())
+# if __name__ == '__main__':
+#     app=QApplication(sys.argv)
+#     wd=Widget()
+#     sys.exit(app.exec_())
+
+app=QApplication(sys.argv)
+wd=Widget()
+sys.exit(app.exec_())

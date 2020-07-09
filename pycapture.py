@@ -2,6 +2,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+# import makethis
 import sys ,cv2, dlib
 import numpy as np
 import face_recognition
@@ -9,6 +10,7 @@ import ctypes
 import pickle
 
 class Window(QWidget):
+
     def __init__(self):
         super().__init__()
 
@@ -18,8 +20,6 @@ class Window(QWidget):
         self.width=300
         self.height=250
         # self.iconName="home.png"
-
-
         self.initUI()
 
     def initUI(self):
@@ -27,9 +27,9 @@ class Window(QWidget):
         # self.setWindowIcon(QtGui.QIcon(self.iconName))
         self.setGeometry(self.left,self.top,self.width,self.height)
 
-        vbox=QVBoxLayout(0)
+        vbox = QVBoxLayout()
         self.btn=QPushButton('open second dialog')
-        self.btn.setFont(QtGui.QFont('sanserif',15))
+        # self.btn.setFont(QtGui.QFont('sanserif',15))
         self.btn.clicked.connect(self.openSecondDialog)
 
         vbox.addWidget(self.btn)

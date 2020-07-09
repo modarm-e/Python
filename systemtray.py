@@ -1,0 +1,26 @@
+import sys
+from PyQt5 import QtWidgets, QtCore, QtGui
+
+class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
+
+    def __init__(self, icon, parent=None):
+        QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
+        menu = QtWidgets.QMenu(parent)
+        exitAction = menu.addAction("Exit")
+        self.setContextMenu(menu)
+        menu.triggered.connect(self.exit)
+
+    def exit(self):
+        QtCore.QCoreApplication.exit()
+
+def main(image):
+    app = QtWidgets.QApplication(sys.argv)
+    w = QtWidgets.QWidget()
+    trayIcon = SystemTrayIcon(QtGui.QIcon(image), w)
+    trayIcon.show()
+    sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    on='face.ico'
+    main(on)

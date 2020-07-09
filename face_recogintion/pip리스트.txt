@@ -1,0 +1,10 @@
+# Name                    Version            Build              Channel
+
+cmake                     3.15.4               he025d50_0    conda-forge
+dlib                      19.8.1                   pypi_0            pypi
+face-recognition          1.2.3                    pypi_0    pypi
+face-recognition-models   0.3.0                    pypi_0    pypi
+opencv-contrib-python     4.1.1.26                 pypi_0    pypi
+opencv-python             4.1.1.26                 pypi_0    pypi
+pickleshare               0.7.5                    pypi_0    pypi
+pyqt5                     5.13.2                   pypi_0    pypi

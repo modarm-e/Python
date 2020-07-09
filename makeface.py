@@ -3,10 +3,12 @@ import numpy as np
 import face_recognition
 import ctypes
 import pickle
-# import face
+import os
+from PyQt5 import QtWidgets ,QtGui, QtCore
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+
 
 # 이름 출력
 def print_name():
@@ -47,13 +49,15 @@ class Application(QMainWindow):
     unknown_face_names=[] ######## 개발자 info추가
 
     def __init__(self):
-        super().__init__()
+        super(Application,self).__init__()
         self.title="you얼굴 recognition한다"
         self.setWindowTitle(self.title)
+        scriptDir = os.path.dirname(os.path.realpath(__file__))
+        self.setWindowIcon(QtGui.QIcon(scriptDir + os.path.sep + 'face.ico'))
         self.setGeometry(150,150,650,550)
-
         menu=self.menuBar()
         menu_file=menu.addMenu("file")
+        menu_info=menu.addMenu("_info")
 
         file_new=QAction("파일에서 찾기",self)
         file_new.triggered.connect(Widget.showDialog)
@@ -65,7 +69,8 @@ class Application(QMainWindow):
         file_new_del.triggered.connect(Widget.delShowDialog)
         file_ban_del=QAction("비허가자 삭제",self)
         file_ban_del.triggered.connect(Widget.delBanDialog)
-
+        file_info=QAction('정보',self)
+        file_info.triggered.connect(Widget.weAre)
         
         file_create=QMenu('추가',self)
         file_delete=QMenu('삭제',self)
@@ -78,9 +83,11 @@ class Application(QMainWindow):
         file_create.addAction(file_ban)
         file_delete.addAction(file_new_del)
         file_delete.addAction(file_ban_del)
+        
 
         menu_file.addMenu(file_create)
         menu_file.addMenu(file_delete)
+        menu_info.addAction(file_info)
 
         self.main_widget=Widget(self)
         self.setCentralWidget(self.main_widget)
@@ -150,19 +157,11 @@ class Widget(QWidget):
 
         self.sldr=QSlider(Qt.Horizontal,self)
         self.sldr.resize(100,25)
-        self.sldr.move(415,490)
+        self.sldr.move(520,490)
         self.sldr.setMinimum(1)
         self.sldr.setMaximum(60)
         self.sldr.setValue(24)
         self.sldr.valueChanged.connect(self.setFps)
-
-        self.sldr1=QSlider(Qt.Horizontal,self)
-        self.sldr1.resize(100,25)
-        self.sldr1.move(520,490)
-        self.sldr1.setMinimum(50)
-        self.sldr1.setMaximum(500)
-        self.sldr1.setValue(300)
-        self.sldr1.valueChanged.connect(self.setSens)
 
         self.setGeometry(150,150,650,540)
         self.setWindowTitle("Cam_exam")
@@ -192,23 +191,36 @@ class Widget(QWidget):
 
     def capDialog(self):
         qid=QInputDialog()
-        qa=QAction()
         qmb=QMessageBox()
         user,ok=QInputDialog.getText(qid,'사용자 추가', '이름을 적어주세요:')
         if user=='':
             QMessageBox.information(qmb,'오류','사용자명을 입력하지 않았습니다.')
         elif ok:
             print('user: ok',user,ok)
+            CP=ControlWindow()
+            CP.show()
+            # dlog=QDialog()
+            # dlog.setGeometry(250,250,325,270)
+            # dlog.setModal(True)
+            # dlog.exec()
+
             # capture=pycapture.Application()
             # face.show()
             # cpt=cv2.VideoCapture(0)
             # _ , frame=cpt.read()
-            ReadFace=face_recognition.load_image_file(frame)
-            ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
-            Application.known_face_names.append(user)
-            Application.known_face_encodings.append(ReadFace_encoding)
-            print_name()
-            save_name()        
+            
+            # ReadFace=face_recognition.load_image_file(frame)
+            # ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
+            # Application.known_face_names.append(user)
+            # Application.known_face_encodings.append(ReadFace_encoding)
+            # print_name()
+            # save_name()    
+
+            # SW=SecondWindow()
+            # SW.show() 
+
+            
+                
 
     def delShowDialog(self):
         qid=QInputDialog()
@@ -270,9 +282,6 @@ class Widget(QWidget):
         self.timer.stop() #타이머를 껏다가 다시킴
         self.timer.start(1000 / self.fps)
 
-    def setSens(self):
-        self.sens=self.sldr1.value()
-        self.prt.setText("감도 "+str(self.sens)+"로 조정!")
 
     def start(self):
         self.timer=QTimer()
@@ -296,9 +305,9 @@ class Widget(QWidget):
                 self.noperson()
             else:
                 for face_encoding in self.face_encodings:
-                    
+                    self.noone=0
                     #사용자 얼굴 인식
-                    matches=face_recognition.compare_faces(Application.known_face_encodings , face_encoding)
+                    matches=face_recognition.compare_faces(Application.known_face_encodings , face_encoding , tolerance=0.53)
                     # self.name="Unknown"
                     print('matches',matches)
                     
@@ -320,7 +329,7 @@ class Widget(QWidget):
                         self.j=0
                     #비허가자
                     elif Application.unknown_face_names:
-                        matches=face_recognition.compare_faces(Application.unknown_face_encodings,face_encoding)
+                        matches=face_recognition.compare_faces(Application.unknown_face_encodings,face_encoding, tolerance=0.56)
                         print('=========matches',matches)
                         face_distances=face_recognition.face_distance(Application.unknown_face_encodings,face_encoding)
                         best_match_index=np.argmin(face_distances)
@@ -371,6 +380,7 @@ class Widget(QWidget):
     def noperson(self):
         self.noone+=1
         if self.noone>500:
+            self.noone=0
             self.stop()
             ctypes.windll.user32.LockWorkStation()
 
@@ -378,13 +388,13 @@ class Widget(QWidget):
     def unknowncount(self):
         self.i+=1
         print("i:",self.i)
-        if self.i>4:
+        if self.i>6:
             self.yellowcard+=1
             self.i=0
             print("yellow:",self.yellowcard)
         if self.yellowcard%5==0:
-            self.stop()
             self.yellowcard=1
+            self.stop()
             ctypes.windll.user32.LockWorkStation()
 
     def unPermission(self):
@@ -395,8 +405,8 @@ class Widget(QWidget):
             self.j=0
             print("red:",self.redcard)
         if self.redcard%3==0:
-            self.stop()
             self.redcard=1
+            self.stop()
             ctypes.windll.user32.LockWorkStation()
             
 
@@ -405,8 +415,115 @@ class Widget(QWidget):
         self.timer.stop()   #타임을 끔
         self.prt.setText("사용중지")
 
+    def weAre(self):
+        mydialog=QDialog()
+        mydialog.setGeometry(250,250,325,270)
+        label1=QLabel("  잘생긴 파이썬 개발자")
+        label2=QLabel("  ==> 안희건, 최민준")
+        label3=QLabel("  버전:      ver.1")
+
+        layout=QGridLayout()
+        layout.addWidget(label1,0,0)
+        layout.addWidget(label2,1,0)
+        layout.addWidget(label3,2,0)
+        mydialog.setLayout(layout)
+
+        mydialog.setModal(True)
+        mydialog.exec()
+        
+
+
+class SecondWindow(QMainWindow):
+    def __init__(self):
+        super(SecondWindow,self).__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.frame2=QLabel(self)
+        self.frame2.resize(500,390)
+        self.frame2.setScaledContents(True)
+        self.frame2.move(5,5)
+
+        self.setGeometry(200,200,650,540)
+        self.show()
+
+
+
+
+class QtCapture(QWidget):
+    def __init__(self):
+        super().__init__()
     
+
+        self.fps = 24
+        self.cap = cv2.VideoCapture(0)
+
+        self.video_frame = QLabel()
+        lay = QVBoxLayout()
+        # lay.setMargin(0)
+        lay.addWidget(self.video_frame)
+        self.setLayout(lay)
+
+    def setFPS(self, fps):
+        self.fps = fps
+
+    def nextFrameSlot(self):
+        ret, frame = self.cap.read()
+        # My webcam yields frames in BGR format
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = QImage(frame, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
+        pix = QPixmap.fromImage(img)
+        self.video_frame.setPixmap(pix)
+
+    def start(self):
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.nextFrameSlot)
+        self.timer.start(1000./self.fps)
+
+    def stop(self):
+        self.timer.stop()
+
+    def deleteLater(self):
+        self.cap.release()
+        ControlWindow().deleteLater()
+
+class ControlWindow(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+        self.capture = None
+
+        self.start_button = QPushButton('Start')
+        self.start_button.clicked.connect(self.startCapture)
+        self.quit_button = QPushButton('End')
+        self.quit_button.clicked.connect(self.endCapture)
+        self.end_button = QPushButton('Stop')
+
+        vbox =QVBoxLayout(self)
+        vbox.addWidget(self.start_button)
+        vbox.addWidget(self.end_button)
+        vbox.addWidget(self.quit_button)
+        self.setLayout(vbox)
+        self.setWindowTitle('Control Panel')
+        self.setGeometry(200,200,200,200)
+        self.show()
+
+    def startCapture(self):
+        if not self.capture:
+            self.capture = QtCapture()
+            self.end_button.clicked.connect(self.capture.stop)
+            # self.capture.setFPS(1)
+            self.capture.setParent(self)
+            self.capture.setWindowFlags(QtCore.Qt.Tool)
+        self.capture.start()
+        self.capture.setGeometry(400,250,200,200)
+        self.capture.show()
+
+    def endCapture(self):
+        self.capture.deleteLater()
+        self.capture = None
+
 if __name__ == '__main__':
     app=QApplication(sys.argv)
     apl=Application()
+    apl.show()
     sys.exit(app.exec_())
