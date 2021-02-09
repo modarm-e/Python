@@ -4,6 +4,7 @@ import face_recognition
 import ctypes
 import pickle
 import os
+import time
 from PyQt5 import QtWidgets ,QtGui, QtCore
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -46,7 +47,7 @@ class Application(QMainWindow):
     known_face_encodings=[]
     known_face_names=[]
     unknown_face_encodings=[] 
-    unknown_face_names=[] ######## 개발자 info추가
+    unknown_face_names=[] 
 
     def __init__(self):
         super(Application,self).__init__()
@@ -59,8 +60,9 @@ class Application(QMainWindow):
         menu_file=menu.addMenu("file")
         menu_info=menu.addMenu("_info")
 
-        file_new=QAction("파일에서 찾기",self)
-        file_new.triggered.connect(Widget.showDialog)
+        # file_new=QAction("파일에서 찾기",self)
+        file_new=QAction("허가자 추가",self)
+        file_new.triggered.connect(Widget.userAddDialog)
         file_cap=QAction("웹캠으로 추가",self)
         file_cap.triggered.connect(Widget.capDialog)
         file_ban=QAction("비허가자 추가",self)
@@ -80,6 +82,7 @@ class Application(QMainWindow):
         menu_user.addAction(file_new)
         menu_user.addAction(file_cap)
         file_create.addMenu(menu_user)
+        # file_create.addAction(file_new)
         file_create.addAction(file_ban)
         file_delete.addAction(file_new_del)
         file_delete.addAction(file_ban_del)
@@ -109,6 +112,18 @@ class Application(QMainWindow):
                 print_name()
         except Exception as exceptError:
             print('Exception Error : ' + str(exceptError))
+    
+class SecondWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        print('initui')
+        layout = QVBoxLayout()
+        self.label = QLabel("Second Window!")
+        layout.addWidget(self.label)
+        self.setLayout(layout)
 
 
 class Widget(QWidget):
@@ -128,9 +143,8 @@ class Widget(QWidget):
         self.name=''
         self.process_this_frame=True
         self.initUI()
+        self.capUser=''
 
-    
-    
     def initUI(self):
         self.cpt=cv2.VideoCapture(0)
         self.fps=60
@@ -151,28 +165,36 @@ class Widget(QWidget):
         self.btn_off.move(110,490)
         self.btn_off.clicked.connect(self.stop)
 
+        self.btn_shot=QPushButton("촬영",self)
+        self.btn_shot.resize(100,25)
+        self.btn_shot.move(515,490)
+        self.btn_shot.hide()
+        self.btn_shot.clicked.connect(self.shot)
+
         self.prt=QLabel(self)
         self.prt.resize(200,25)
         self.prt.move(215,490)
 
-        self.sldr=QSlider(Qt.Horizontal,self)
-        self.sldr.resize(100,25)
-        self.sldr.move(520,490)
-        self.sldr.setMinimum(1)
-        self.sldr.setMaximum(60)
-        self.sldr.setValue(24)
-        self.sldr.valueChanged.connect(self.setFps)
+        # self.sldr=QSlider(Qt.Horizontal,self)
+        # self.sldr.resize(100,25)
+        # self.sldr.move(520,490)
+        # self.sldr.setMinimum(1)
+        # self.sldr.setMaximum(60)
+        # self.sldr.setValue(24)
+        # self.sldr.valueChanged.connect(self.setFps)
 
         self.setGeometry(150,150,650,540)
         self.setWindowTitle("Cam_exam")
         self.show()
 
-    def showDialog(self):
+    def userAddDialog(self):   #사용자 사진으로 추가
         qid=QInputDialog()
         qa=QAction()
         qmb=QMessageBox()
         user,ok = QInputDialog.getText(qid,'사용자 추가','이름을 적어주세요:')
-        if user=='':
+        if ok==False:
+            pass
+        elif user=='':
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
             print('user: ok',user,ok)
@@ -189,61 +211,45 @@ class Widget(QWidget):
                 save_name()
                 #배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
 
-    def capDialog(self):
+    def capDialog(self):  #------------수정-------21/01/18 ~ 21/02/09
+        # _, frame=self.cpt.read()
+        w = SecondWindow()
         qid=QInputDialog()
         qmb=QMessageBox()
         user,ok=QInputDialog.getText(qid,'사용자 추가', '이름을 적어주세요:')
+        if ok==False:
+            pass
         if user=='':
             QMessageBox.information(qmb,'오류','사용자명을 입력하지 않았습니다.')
         elif ok:
-            print('user: ok',user,ok)
-            CP=ControlWindow()
-            CP.show()
-            # dlog=QDialog()
-            # dlog.setGeometry(250,250,325,270)
-            # dlog.setModal(True)
-            # dlog.exec()
-
-            # capture=pycapture.Application()
-            # face.show()
-            # cpt=cv2.VideoCapture(0)
-            # _ , frame=cpt.read()
+            Widget.capUser = user
+            # =====이건 다이어로그 창이 뜸
+            dlog=QDialog()
+            label_cap=QLabel('버튼을 누르면 얼굴을 추가합니다')
+            label_cap.setAlignment(Qt.AlignCenter)
+            font1=label_cap.font()
+            font1.setPointSize(12)
+            label_cap.setFont(font1)
             
-            # ReadFace=face_recognition.load_image_file(frame)
-            # ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
-            # Application.known_face_names.append(user)
-            # Application.known_face_encodings.append(ReadFace_encoding)
-            # print_name()
-            # save_name()    
-
-            # SW=SecondWindow()
-            # SW.show() 
-
+            btn = QPushButton('capture')
+            btn.clicked.connect(Widget.shot)
             
-                
+            vbox_cap=QVBoxLayout()
+            vbox_cap.addWidget(label_cap)
+            vbox_cap.addWidget(btn)
+            dlog.setLayout(vbox_cap)
+            dlog.setGeometry(750,250,255,170)
+            dlog.setModal(True)
+            dlog.exec()
 
-    def delShowDialog(self):
-        qid=QInputDialog()
-        qa=QAction()
-        qmb=QMessageBox()
-        user,ok = QInputDialog.getText(qid,'허가자 삭제', "이미 등록된 허가자 : " + ", ".join(Application.known_face_names) + '\n이름을 적어주세요:')
-        if user=='':
-            QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
-        elif ok:
-            print('user: ok',user,ok)
-            index = Application.known_face_names.index(user)
-            Application.known_face_names.remove(user)
-            del Application.known_face_encodings[index]
-            print_name()
-            save_name()
-            # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
-                      
     def banDialog(self):
         qid=QInputDialog()
         qa=QAction()
         qmb=QMessageBox()
         user,ok = QInputDialog.getText(qid,'비허가자 추가','이름을 적어주세요:')
-        if user=='':
+        if ok==False:
+            pass
+        elif user=='':
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
             print('user: ok',user,ok)
@@ -259,12 +265,32 @@ class Widget(QWidget):
                 save_name()
             # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
 
+    def delShowDialog(self):
+        qid=QInputDialog()
+        qa=QAction()
+        qmb=QMessageBox()
+        user,ok = QInputDialog.getText(qid,'허가자 삭제', "이미 등록된 허가자 : " + ", ".join(Application.known_face_names) + '\n이름을 적어주세요:')
+        if ok==False:
+            pass
+        elif user=='':
+            QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
+        elif ok:
+            print('user: ok',user,ok)
+            index = Application.known_face_names.index(user)
+            Application.known_face_names.remove(user)
+            del Application.known_face_encodings[index]
+            print_name()
+            save_name()
+            # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
+                      
     def delBanDialog(self):
         qid=QInputDialog()
         qa=QAction()
         qmb=QMessageBox()
         user,ok = QInputDialog.getText(qid,'비허가자 삭제',"이미 등록된 비허가자 : " + ", ".join(Application.unknown_face_names) + '\n이름을 적어주세요:')
-        if user=='':
+        if ok==False:
+            pass
+        elif user=='':
             QMessageBox.information(qmb,"오류","사용자명을 입력하지 않았습니다.")
         elif ok:
             print('user: ok',user,ok)
@@ -275,23 +301,21 @@ class Widget(QWidget):
             save_name()
             # 배열에 값이 append되면 save_name()함수로 수정/생성 작업 해준다.
 
-
-    def setFps(self):
-        self.fps=self.sldr.value() 
-        self.prt.setText("FPS "+str(self.fps)+"로 조정!")
-        self.timer.stop() #타이머를 껏다가 다시킴
-        self.timer.start(1000 / self.fps)
-
-
     def start(self):
         self.timer=QTimer()
         self.timer.timeout.connect(self.nextFrameSlot)
-        self.timer.start(1000 /self.fps) #24분의 1초마다 반복
+        self.timer.start(1000 /self.fps) #60분의 1초마다 반복==60fps
 
-    def nextFrameSlot(self):
+    def nextFrameSlot(self):  # 얼굴 판단 함수
         _, frame=self.cpt.read()
-        small_frame=cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
-        rgb_small_frame=small_frame[ :, :,::-1]
+        try:
+          small_frame=cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
+        except Exception as e:
+          print(str(e))
+        try:
+          rgb_small_frame=small_frame[ :, :,::-1]
+        except Exception as e:
+          print(str(e))
         frame=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         if len(Application.known_face_names)==0:
@@ -302,7 +326,7 @@ class Widget(QWidget):
             self.face_encodings=face_recognition.face_encodings(rgb_small_frame, self.face_locations)
             
             if len(self.face_locations)==0:
-                self.noperson()
+                self.noperson() #사람이 없다면 잠금
             else:
                 for face_encoding in self.face_encodings:
                     self.noone=0
@@ -369,13 +393,13 @@ class Widget(QWidget):
                                 cv2.putText(frame,"Who are you",(left+6,bottom-6), font, 1.0,(255,255,255),1)
                         self.name="Unknown"
                         self.unknowncount()
-                    self.face_names.append(self.name)
+                    self.face_names.append(self.name) # ?????????
 
         self.prt.setText('사용자 : '+self.name)
-        self.process_this_frame = not self.process_this_frame
-        img=QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+        self.process_this_frame = not self.process_this_frame  #???????
+        img=QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888) #frame.shape[1]->가로 frame.shape[0]->세로
         pix=QPixmap.fromImage(img)
-        self.frame.setPixmap(pix)
+        self.frame.setPixmap(pix) #결론적으로 화면에 이미지 60fps로 표시
     
     def noperson(self):
         self.noone+=1
@@ -385,7 +409,7 @@ class Widget(QWidget):
             ctypes.windll.user32.LockWorkStation()
 
 
-    def unknowncount(self):
+    def unknowncount(self): # 등록 되지 않은 사람
         self.i+=1
         print("i:",self.i)
         if self.i>6:
@@ -393,11 +417,19 @@ class Widget(QWidget):
             self.i=0
             print("yellow:",self.yellowcard)
         if self.yellowcard%5==0:
+            _, frame=self.cpt.read()
+            now1 = time.strftime('%y-%m-%d %p %I;%M ',time.localtime(time.time()))
+            now2 = time.strftime('%y-%m-%d %p %I:%M ',time.localtime(time.time()))
+            print(now2)
+            cv2.imwrite(now1+'Unidentified.jpg',frame)
+            f=open('maintain.txt',"a")
+            f.write(now2+" : Unidentified\n")
+            f.close()
             self.yellowcard=1
             self.stop()
             ctypes.windll.user32.LockWorkStation()
 
-    def unPermission(self):
+    def unPermission(self): # 비허가자
         self.j+=1
         print("j:",self.j)
         if self.j>4:
@@ -405,6 +437,14 @@ class Widget(QWidget):
             self.j=0
             print("red:",self.redcard)
         if self.redcard%3==0:
+            _, frame=self.cpt.read()
+            now1 = time.strftime('%y-%m-%d %p %I;%M ',time.localtime(time.time()))
+            now2 = time.strftime('%y-%m-%d %p %I:%M ',time.localtime(time.time()))
+            print(now2)
+            cv2.imwrite(now1+'UnPermission.jpg',frame)
+            f=open('maintain.txt',"a")
+            f.write(now2+" : Unpermission - "+self.name+"\n")
+            f.close()
             self.redcard=1
             self.stop()
             ctypes.windll.user32.LockWorkStation()
@@ -415,12 +455,31 @@ class Widget(QWidget):
         self.timer.stop()   #타임을 끔
         self.prt.setText("사용중지")
 
+    # @pyqtSlot()
+    def shot(self):
+        print('shot')
+        print(Widget.capUser)
+        cpt1=cv2.VideoCapture(0)
+        _, frame=cpt1.read()
+        print(frame)
+        cv2.imwrite(Widget.capUser+'.jpg',frame)#오류 고쳐야함
+        try:
+          ReadFace=face_recognition.load_image_file(frame)
+          ReadFace_encoding=face_recognition.face_encodings(ReadFace)[0]
+          Application.known_face_names.append(Widget.capUser)
+          Application.known_face_encodings.append(ReadFace_encoding)
+          print_name()
+          save_name()    
+        except Exception as e:
+          print(str(e))
+          print("무슨 오류인지 모르겟내;;;")
+
     def weAre(self):
         mydialog=QDialog()
         mydialog.setGeometry(250,250,325,270)
-        label1=QLabel("  잘생긴 파이썬 개발자")
-        label2=QLabel("  ==> 안희건, 최민준")
-        label3=QLabel("  버전:      ver.1")
+        label1=QLabel("  파이썬 개발자")
+        label2=QLabel("  최민준")
+        label3=QLabel("  버전:      ver.1.1")
 
         layout=QGridLayout()
         layout.addWidget(label1,0,0)
@@ -432,64 +491,9 @@ class Widget(QWidget):
         mydialog.exec()
         
 
-
-class SecondWindow(QMainWindow):
-    def __init__(self):
-        super(SecondWindow,self).__init__()
-        self.initUI()
-
-    def initUI(self):
-        self.frame2=QLabel(self)
-        self.frame2.resize(500,390)
-        self.frame2.setScaledContents(True)
-        self.frame2.move(5,5)
-
-        self.setGeometry(200,200,650,540)
-        self.show()
-
-
-
-
-class QtCapture(QWidget):
-    def __init__(self):
-        super().__init__()
-    
-
-        self.fps = 24
-        self.cap = cv2.VideoCapture(0)
-
-        self.video_frame = QLabel()
-        lay = QVBoxLayout()
-        # lay.setMargin(0)
-        lay.addWidget(self.video_frame)
-        self.setLayout(lay)
-
-    def setFPS(self, fps):
-        self.fps = fps
-
-    def nextFrameSlot(self):
-        ret, frame = self.cap.read()
-        # My webcam yields frames in BGR format
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = QImage(frame, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
-        pix = QPixmap.fromImage(img)
-        self.video_frame.setPixmap(pix)
-
-    def start(self):
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.nextFrameSlot)
-        self.timer.start(1000./self.fps)
-
-    def stop(self):
-        self.timer.stop()
-
-    def deleteLater(self):
-        self.cap.release()
-        ControlWindow().deleteLater()
-
 class ControlWindow(QWidget):
     def __init__(self):
-        QWidget.__init__(self)
+        QWidget.__init__()
         self.capture = None
 
         self.start_button = QPushButton('Start')
